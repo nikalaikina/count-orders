@@ -6,7 +6,7 @@ import io.github.martinhh.derived.scalacheck.given
 import org.scalacheck.Prop.{forAll, propBoolean}
 import org.scalacheck.Properties
 
-import java.time.Instant
+import java.time.{Instant, LocalDate}
 
 object ReportTest extends Properties("OrderReport") {
 
@@ -14,8 +14,8 @@ object ReportTest extends Properties("OrderReport") {
     (
         orders: List[Order],
         product: Product,
-        from: Instant,
-        to: Instant,
+        from: LocalDate,
+        to: LocalDate,
         productCreationDate: Instant
     ) =>
       orders.nonEmpty ==> {
@@ -37,8 +37,8 @@ object ReportTest extends Properties("OrderReport") {
     (
         orders: List[Order],
         product: Product,
-        from: Instant,
-        to: Instant
+        from: LocalDate,
+        to: LocalDate
     ) =>
       orders.nonEmpty ==> {
         val ordersFixed = orders.map(absQuantity)
@@ -61,8 +61,8 @@ object ReportTest extends Properties("OrderReport") {
   property("no orders") = forAll {
     (
         product: Product,
-        from: Instant,
-        to: Instant
+        from: LocalDate,
+        to: LocalDate
     ) =>
       val report: IO[Map[Interval, BigInt]] =
         new OrdersReport[IO](
@@ -75,7 +75,7 @@ object ReportTest extends Properties("OrderReport") {
   }
 
   def ordersRepo(orders: List[Order]): OrderRepo[IO] = {
-    (_: Instant, _: Instant) =>
+    (_: LocalDate, _: LocalDate) =>
       fs2.Stream.emits(orders)
   }
 

@@ -19,7 +19,6 @@ case class Interval(
 case class Order(
     id: OrderId,
     customer: CustomerId,
-    total: Amount,
     placed: Instant,
     items: List[Item]
 )

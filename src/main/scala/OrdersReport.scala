@@ -16,16 +16,16 @@ class OrdersReport[F[_]: Concurrent: Temporal](
 ) {
   import OrdersReport._
 
-  def report(from: Instant, to: Instant): F[Map[Interval, BigInt]] = {
+  def report(from: LocalDate, to: LocalDate): F[Map[Interval, BigInt]] = {
     Temporal[F].realTimeInstant
       .map(ofInstant(_, UTC))
       .flatMap(today => report(today, from, to))
   }
 
-  def report(
+  private def report(
       today: LocalDate,
-      from: Instant,
-      to: Instant
+      from: LocalDate,
+      to: LocalDate
   ): F[Map[Interval, BigInt]] = {
     val toInterval: Instant => Interval = { instant =>
       val date = ofInstant(instant, UTC)
