@@ -3,13 +3,12 @@ package com.github.nikalaikina
 import java.time.Instant
 import java.util.UUID
 
-// scalacheck gens doesnt seam to work for opaque types in scala 3
-type OrderId = UUID
-type CustomerId = UUID
-type Category = String
-type ProductId = UUID
-type Amount = BigDecimal
-type Weight = BigDecimal
+opaque type OrderId = UUID
+opaque type CustomerId = UUID
+opaque type Category = String
+opaque type ProductId = UUID
+opaque type Amount = BigDecimal
+opaque type Weight = BigDecimal
 
 case class Interval(
     endsMonthsAgo: Int,
