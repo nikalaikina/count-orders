@@ -1,5 +1,4 @@
 package com.github.nikalaikina
-import service.OrdersReport
 
 import cats.effect.unsafe.implicits.global
 import cats.effect.{Concurrent, IO, Temporal}
