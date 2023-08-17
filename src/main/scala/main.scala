@@ -11,6 +11,7 @@ import fs2.Stream
 import java.time.LocalDate.ofInstant
 import java.time.ZoneOffset.*
 import java.time.temporal.ChronoUnit
+import java.time.temporal.ChronoUnit.MONTHS
 import scala.concurrent.duration.*
 
 @main
@@ -48,9 +49,7 @@ object service {
       val toInterval: Instant => Interval = { instant =>
         val date = ofInstant(instant, UTC)
         Intervals
-          .find(i =>
-            today.minus(i.endsMonthsAgo, ChronoUnit.MONTHS) isAfter date
-          )
+          .find(i => today.minus(i.endsMonthsAgo, MONTHS) isAfter date)
           .getOrElse(Intervals.last)
       }
 
