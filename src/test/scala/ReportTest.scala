@@ -2,13 +2,19 @@ package com.github.nikalaikina
 
 import cats.effect.unsafe.implicits.global
 import cats.effect.{Concurrent, IO, Temporal}
-import io.github.martinhh.derived.scalacheck.given
 import org.scalacheck.Prop.{forAll, propBoolean}
 import org.scalacheck.Properties
+import org.scalacheck.Arbitrary
+import org.scalacheck.Arbitrary._
+import org.scalacheck._
+import Gen._
+import Arbitrary.arbitrary
 
 import java.time.{Instant, LocalDate}
 
 object ReportTest extends Properties("OrderReport") {
+  import Gens._
+  import Gens.given
 
   property("all to one interval") = forAll {
     (

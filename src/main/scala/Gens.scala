@@ -1,14 +1,16 @@
 package com.github.nikalaikina
 
 import java.time.Instant
-import org.scalacheck.Prop._
-import org.scalacheck.Gen
+import org.scalacheck.Prop.*
+import org.scalacheck.{Arbitrary, Gen}
 
 object Gens {
 
   // since 2017
-  private val instantGen: Gen[Instant] =
+  implicit val instantGen: Gen[Instant] =
     Gen.choose[Instant](Instant.ofEpochMilli(1480464000000L), Instant.now())
+
+  given Arbitrary[Instant] = Arbitrary(instantGen)
 
   implicit val itemGen: Gen[Item] = for {
     product <- Gen.uuid
@@ -24,6 +26,8 @@ object Gens {
     tax = tax
   )
 
+  given Arbitrary[Item] = Arbitrary(itemGen)
+
   implicit val orderGen: Gen[Order] = for {
     id <- Gen.uuid
     customer <- Gen.uuid
@@ -35,6 +39,8 @@ object Gens {
     placed = placed,
     items = items
   )
+
+  given Arbitrary[Order] = Arbitrary(orderGen)
 
   implicit val productGen: Gen[Product] = for {
     id <- Gen.uuid
@@ -51,5 +57,7 @@ object Gens {
     price = price,
     creationDate = creationDate
   )
+
+  given Arbitrary[Product] = Arbitrary(productGen)
 
 }
