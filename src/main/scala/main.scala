@@ -1,17 +1,17 @@
 package com.github.nikalaikina
 
-import cats.effect.*
-import com.github.nikalaikina.model.*
-import cats.implicits.*
+import com.github.nikalaikina.{Interval, Order, Product}
 
-import java.time.{Instant, LocalDate, ZoneOffset}
-import java.util.UUID
+import cats.effect.*
+import cats.implicits.*
 import fs2.Stream
 
 import java.time.LocalDate.ofInstant
 import java.time.ZoneOffset.*
 import java.time.temporal.ChronoUnit
 import java.time.temporal.ChronoUnit.MONTHS
+import java.time.{Instant, LocalDate, ZoneOffset}
+import java.util.UUID
 import scala.concurrent.duration.*
 
 @main
@@ -20,7 +20,7 @@ def main(): Unit = {
 }
 
 object service {
-  import repo._
+  import repo.*
 
   class OrdersReport[F[_]: Concurrent: Temporal](
       orders: OrderRepo[F],
@@ -84,44 +84,3 @@ object repo {
   }
 }
 
-object model {
-
-  // scalacheck gens doesnt seam to work for opaque types in scala 3
-  type OrderId = UUID
-  type CustomerId = UUID
-  type Category = String
-  type ProductId = UUID
-  type Amount = BigDecimal
-  type Weight = BigDecimal
-
-  case class Interval(
-      endsMonthsAgo: Int,
-      show: String
-  )
-
-  case class Order(
-      id: OrderId,
-      customer: CustomerId,
-      total: Amount,
-      placed: Instant,
-      items: List[Item]
-  )
-
-  case class Item(
-      product: ProductId,
-      quantity: Int,
-      cost: Amount,
-      shippingFee: Amount,
-      tax: Amount
-  )
-
-  case class Product(
-      id: ProductId,
-      name: String,
-      category: Category,
-      weight: Weight,
-      price: Amount,
-      creationDate: Instant
-  )
-
-}
