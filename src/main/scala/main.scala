@@ -1,14 +1,17 @@
 package com.github.nikalaikina
 
-import cats.effect.kernel.Concurrent
+import cats.effect.*
 import com.github.nikalaikina.model.*
 import cats.implicits.*
 
-import java.time.Instant
+import java.time.{Instant, LocalDate, ZoneOffset}
 import java.util.UUID
 import fs2.Stream
 
-import scala.concurrent.duration.FiniteDuration
+import java.time.LocalDate.ofInstant
+import java.time.ZoneOffset.*
+import java.time.temporal.ChronoUnit
+import scala.concurrent.duration.*
 
 @main
 def main(): Unit = {
@@ -18,28 +21,44 @@ def main(): Unit = {
 object service {
   import repo._
 
-  class OrdersReport[F[_]: Concurrent](
+  class OrdersReport[F[_]: Concurrent: Temporal](
       orders: OrderRepo[F],
       products: ProductRepo[F]
   ) {
-    val Intervals: List[Interval] = ???
-    val MaxProductRequest: Int = ???
+    val Intervals: List[Interval] = List(
+      Interval(endsMonthsAgo = 12, show = ">12 months"),
+      Interval(endsMonthsAgo = 6, show = "7-12 months"),
+      Interval(endsMonthsAgo = 3, show = "4-6 months"),
+      Interval(endsMonthsAgo = 0, show = "1-3 months")
+    )
 
-    private def isInInterval(
-        interval: Interval,
-        date: Instant,
-        now: Instant
-    ): Boolean = ???
+    val MaxProductRequest: Int = 100
 
-    def report(from: Instant, to: Instant): F[Map[Interval, Int]] = {
+    def report(from: Instant, to: Instant): F[Map[Interval, BigInt]] = {
+      Temporal[F].realTimeInstant
+        .map(ofInstant(_, UTC))
+        .flatMap(today => report(today, from, to))
+    }
 
-      val toInterval: Instant => Interval = ???
+    def report(
+        today: LocalDate,
+        from: Instant,
+        to: Instant
+    ): F[Map[Interval, BigInt]] = {
+      val toInterval: Instant => Interval = { instant =>
+        val date = ofInstant(instant, UTC)
+        Intervals
+          .find(i =>
+            today.minus(i.endsMonthsAgo, ChronoUnit.MONTHS) isAfter date
+          )
+          .getOrElse(Intervals.last)
+      }
 
-      val res: Stream[F, Map[Interval, Int]] = orders
+      val stream: Stream[F, Map[Interval, BigInt]] = orders
         .find(from, to)
         .flatMap(order => Stream.emits(order.items))
         .foldMap(item =>
-          Map(item.product -> item.quantity)
+          Map(item.product -> BigInt(item.quantity))
         ) // i assume products can fit in memory
         .flatMap(productsMap =>
           Stream.emits(productsMap.toList.grouped(MaxProductRequest).toSeq)
@@ -52,9 +71,7 @@ object service {
         )
         .foldMonoid
 
-      res.compile.toList.map { (maps: List[Map[Interval, Int]]) =>
-        maps.combineAll
-      }
+      stream.compile.toList.map(_.combineAll)
     }
   }
 }
@@ -70,18 +87,18 @@ object repo {
 
 object model {
 
+  // scalacheck gens doesnt seam to work for opaque types in scala 3
+  type OrderId = UUID
+  type CustomerId = UUID
+  type Category = String
+  type ProductId = UUID
+  type Amount = BigDecimal
+  type Weight = BigDecimal
+
   case class Interval(
-      startsAgo: FiniteDuration,
-      endsAgo: FiniteDuration,
+      endsMonthsAgo: Int,
       show: String
   )
-
-  opaque type OrderId = UUID
-  opaque type CustomerId = UUID
-  opaque type Category = String
-  opaque type ProductId = UUID
-  opaque type Amount = BigDecimal
-  opaque type Weight = BigDecimal
 
   case class Order(
       id: OrderId,
@@ -91,8 +108,6 @@ object model {
       items: List[Item]
   )
 
-//Item: information about the purchased item (cost, shipping fee, tax amount, ...)
-
   case class Item(
       product: ProductId,
       quantity: Int,
@@ -100,8 +115,6 @@ object model {
       shippingFee: Amount,
       tax: Amount
   )
-
-//Product: information about the product (name, category, weight, price, creation date, ...)
 
   case class Product(
       id: ProductId,
