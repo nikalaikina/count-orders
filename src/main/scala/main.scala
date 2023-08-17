@@ -20,8 +20,6 @@ def main(): Unit = {
 }
 
 object service {
-  import repo.*
-
   class OrdersReport[F[_]: Concurrent: Temporal](
       orders: OrderRepo[F],
       products: ProductRepo[F]
@@ -74,13 +72,3 @@ object service {
     }
   }
 }
-
-object repo {
-  trait OrderRepo[F[_]] {
-    def find(from: Instant, to: Instant): Stream[F, Order]
-  }
-  trait ProductRepo[F[_]] {
-    def find(ids: Set[ProductId]): Stream[F, Product]
-  }
-}
-

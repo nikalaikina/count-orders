@@ -1,6 +1,4 @@
 package com.github.nikalaikina
-
-import repo.*
 import service.OrdersReport
 
 import cats.effect.unsafe.implicits.global
