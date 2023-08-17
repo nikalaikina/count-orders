@@ -23,26 +23,13 @@ object ReportTest extends Properties("OrderReport") {
         productCreationDate: Instant
     ) =>
       orders.nonEmpty ==> {
-        val ordersRepo: OrderRepo[IO] = new OrderRepo[IO] {
-          override def find(
-              from: Instant,
-              to: Instant
-          ): fs2.Stream[IO, Order] = {
-            fs2.Stream.emits(orders.map(absQuantity))
-          }
-        }
-        val productsRepo: ProductRepo[IO] = new ProductRepo[IO] {
-          override def find(ids: Set[ProductId]): fs2.Stream[IO, Product] = {
-            fs2.Stream.emits(
-              ids.toList.map(id =>
-                product.copy(id = id, creationDate = productCreationDate)
-              )
-            )
-          }
-        }
+        val ordersFixed = orders.map(absQuantity)
 
         val report: IO[Map[Interval, BigInt]] =
-          new OrdersReport[IO](ordersRepo, productsRepo).report(from, to)
+          new OrdersReport[IO](
+            ordersRepo(ordersFixed),
+            productsRepo(product.copy(creationDate = productCreationDate))
+          ).report(from, to)
 
         val map = report.unsafeRunSync()
 
@@ -60,24 +47,11 @@ object ReportTest extends Properties("OrderReport") {
       orders.nonEmpty ==> {
         val ordersFixed = orders.map(absQuantity)
 
-        val ordersRepo: OrderRepo[IO] = new OrderRepo[IO] {
-          override def find(
-              from: Instant,
-              to: Instant
-          ): fs2.Stream[IO, Order] = {
-            fs2.Stream.emits(ordersFixed)
-          }
-        }
-        val productsRepo: ProductRepo[IO] = new ProductRepo[IO] {
-          override def find(ids: Set[ProductId]): fs2.Stream[IO, Product] = {
-            fs2.Stream.emits(
-              ids.toList.map(id => product.copy(id = id))
-            )
-          }
-        }
-
         val report: IO[Map[Interval, BigInt]] =
-          new OrdersReport[IO](ordersRepo, productsRepo).report(from, to)
+          new OrdersReport[IO](
+            ordersRepo(ordersFixed),
+            productsRepo(product)
+          ).report(from, to)
 
         val map = report.unsafeRunSync()
 
@@ -92,32 +66,26 @@ object ReportTest extends Properties("OrderReport") {
     (
         product: Product,
         from: Instant,
-        to: Instant,
-        productCreationDate: Instant
+        to: Instant
     ) =>
-      val ordersRepo: OrderRepo[IO] = new OrderRepo[IO] {
-        override def find(
-            from: Instant,
-            to: Instant
-        ): fs2.Stream[IO, Order] = {
-          fs2.Stream.empty
-        }
-      }
-      val productsRepo: ProductRepo[IO] = new ProductRepo[IO] {
-        override def find(ids: Set[ProductId]): fs2.Stream[IO, Product] = {
-          fs2.Stream.emits(
-            ids.toList.map(id =>
-              product.copy(id = id, creationDate = productCreationDate)
-            )
-          )
-        }
-      }
-
       val report: IO[Map[Interval, BigInt]] =
-        new OrdersReport[IO](ordersRepo, productsRepo).report(from, to)
+        new OrdersReport[IO](
+          ordersRepo(List.empty),
+          productsRepo(product)
+        ).report(from, to)
 
       val map = report.unsafeRunSync()
       map.isEmpty
+  }
+
+  def ordersRepo(orders: List[Order]): OrderRepo[IO] = {
+    (_: Instant, _: Instant) =>
+      fs2.Stream.emits(orders)
+  }
+
+  def productsRepo(product: Product): ProductRepo[IO] = {
+    (ids: Set[ProductId]) =>
+      fs2.Stream.emits(ids.toList.map(id => product.copy(id = id)))
   }
 
   private def absQuantity(o: Order): Order =
