@@ -25,11 +25,9 @@ object ReportTest extends Properties("OrderReport") {
         productCreationDate: Instant
     ) =>
       orders.nonEmpty ==> {
-        val ordersFixed = orders.map(absQuantity)
-
         val report: IO[Map[Interval, BigInt]] =
           new OrdersReport[IO](
-            ordersRepo(ordersFixed),
+            ordersRepo(orders),
             productsRepo(product.copy(creationDate = productCreationDate))
           ).report(from, to)
 
@@ -47,18 +45,16 @@ object ReportTest extends Properties("OrderReport") {
         to: LocalDate
     ) =>
       orders.nonEmpty ==> {
-        val ordersFixed = orders.map(absQuantity)
-
         val report: IO[Map[Interval, BigInt]] =
           new OrdersReport[IO](
-            ordersRepo(ordersFixed),
+            ordersRepo(orders),
             productsRepo(product)
           ).report(from, to)
 
         val map = report.unsafeRunSync()
 
         val sum =
-          ordersFixed.flatMap(_.items).map(_.quantity).map(BigInt.apply).sum
+          orders.flatMap(_.items).map(_.quantity).map(BigInt.apply).sum
 
         map.values.sum == sum
       }
@@ -90,6 +86,4 @@ object ReportTest extends Properties("OrderReport") {
       fs2.Stream.emits(ids.toList.map(id => product.copy(id = id)))
   }
 
-  private def absQuantity(o: Order): Order =
-    o.copy(items = o.items.map(i => i.copy(quantity = math.abs(i.quantity))))
 }
